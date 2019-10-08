@@ -17,14 +17,41 @@ let getTasks = function (db, callback) {
     })
 }
 
-app.get('/tasks', function (req, res) {
+app.get('/tasks', jsonParser, function(req, res) {
     mongoClient.connect(url, {useNewUrlParser: true, useUnifiedTopology: true}, function (err, client) {
         console.log('Successfully connected')
 
-        let db = client.db('ToDoLis')
+        let db = client.db('ToDoApp')
         getTasks(db, function (result) {
             console.log(result)
             res.json(result)
         })
     })
+})
+
+let addTask = function(db, newTask, callback) {
+    var collection = db.collection('Tasks')
+    collection.insertOne(newTask, function (err, result) {
+        console.log('Successfully added a task')
+        callback(result)
+    })
+}
+
+app.post('/tasks/add', jsonParser, function(req, res) {
+    mongoClient.connect(url, {useNewUrlParser: true, useUnifiedTopology: true}, function(err, client) {
+        console.log('Successfully connected')
+
+        let db = client.db('ToDoList')
+        let newTask = req.body
+        addTask(db, newTask, function(result) {
+            console.log(result)
+            res.json(result)
+            // console.log({taskAdded: result.insertedCount})
+            // res.json({taskAdded: result.insertedCount})
+        })
+    })
+})
+
+app.listen(port, function () {
+    console.log(`Application listening on port ${port}!`)
 })
