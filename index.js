@@ -4,6 +4,7 @@ const app = express()
 const port = 3000
 
 const mongoClient = require('mongodb').MongoClient
+const ObjectId = require('mongodb').ObjectId
 const url = 'mongodb://localhost:27017'
 
 let jsonParser = bodyParser.json()
@@ -17,7 +18,7 @@ let getTasks = function (db, callback) {
     })
 }
 
-app.get('/tasks', jsonParser, function(req, res) {
+app.get('/tasks', jsonParser, function (req, res) {
     mongoClient.connect(url, {useNewUrlParser: true, useUnifiedTopology: true}, function (err, client) {
         console.log('Successfully connected')
 
@@ -29,25 +30,46 @@ app.get('/tasks', jsonParser, function(req, res) {
     })
 })
 
-let addTask = function(db, newTask, callback) {
-    var collection = db.collection('Tasks')
+let addTask = function (db, newTask, callback) {
+    let collection = db.collection('Tasks')
     collection.insertOne(newTask, function (err, result) {
         console.log('Successfully added a task')
         callback(result)
     })
 }
 
-app.post('/tasks/add', jsonParser, function(req, res) {
-    mongoClient.connect(url, {useNewUrlParser: true, useUnifiedTopology: true}, function(err, client) {
+app.post('/tasks/add', jsonParser, function (req, res) {
+    mongoClient.connect(url, {useNewUrlParser: true, useUnifiedTopology: true}, function (err, client) {
         console.log('Successfully connected')
 
-        let db = client.db('ToDoList')
+        let db = client.db('ToDoApp')
         let newTask = req.body
-        addTask(db, newTask, function(result) {
+        addTask(db, newTask, function (result) {
+            console.log({taskAdded: result.insertedCount})
+            res.json({taskAdded: result.insertedCount})
+        })
+    })
+})
+
+let completeTask = function (db, id, completed, callback) {
+    let collection = db.collection('Tasks')
+    collection.updateOne({"_id": id},
+        {$set: completed},
+        function (err, result) {
+            console.log('Task completed')
+            callback(result)
+        })
+}
+
+app.put('/tasks/complete/:id', jsonParser, function (req, res) {
+    mongoClient.connect(url, {useNewUrlParser: true, useUnifiedTopology: true}, function (err, client) {
+        console.log('Successfully connected')
+
+        let db = client.db('ToDoApp')
+        let id = ObjectId(req.params.id)
+        completeTask(db, id, function (result) {
             console.log(result)
             res.json(result)
-            // console.log({taskAdded: result.insertedCount})
-            // res.json({taskAdded: result.insertedCount})
         })
     })
 })
